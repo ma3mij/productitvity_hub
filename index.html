@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility App: To-Do, Notes & Shopping</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-content {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .task-item, .note-item, .shopping-item {
+            transition: background-color 0.2s ease;
+        }
+        .task-item:hover, .note-item:hover, .shopping-item:hover {
+            background-color: #f9fafb; /* A very light gray */
+        }
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.5);
+        }
+        /* Styles for the modal */
+        .modal-backdrop {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Productivity Hub</h1>
+            <p class="text-gray-500 mt-1">Your personal space for tasks, notes, and lists.</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+                <button id="tab-todo" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-indigo-600 border-indigo-500 focus-ring rounded-t-md" aria-current="page">
+                    To-Do List
+                </button>
+                <button id="tab-notes" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 focus-ring rounded-t-md">
+                    Meeting Notes
+                </button>
+                <button id="tab-shopping" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 focus-ring rounded-t-md">
+                    Shopping List
+                </button>
+            </nav>
+        </div>
+
+        <!-- App Content -->
+        <main>
+            <!-- To-Do List Section -->
+            <div id="content-todo" class="tab-content">
+                <form id="todo-form" class="grid grid-cols-1 md:grid-cols-2 items-center gap-3 mb-4">
+                    <input type="text" id="todo-input" placeholder="Add a new task..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3 focus-ring" required>
+                    <div class="grid grid-cols-3 gap-3">
+                        <input type="date" id="todo-due-date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3 focus-ring">
+                        <select id="todo-category-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3 focus-ring"></select>
+                        <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-3 text-center focus-ring">Add</button>
+                    </div>
+                </form>
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-2">
+                         <label for="todo-filter-select" class="text-sm font-medium text-gray-700">Filter by:</label>
+                         <select id="todo-filter-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 focus-ring"></select>
+                    </div>
+                    <button id="manage-categories-btn" class="text-sm text-indigo-600 hover:underline focus-ring rounded">Manage Categories</button>
+                </div>
+                <div id="todo-list" class="space-y-3"></div>
+            </div>
+
+            <!-- Meeting Notes Section -->
+            <div id="content-notes" class="tab-content hidden">
+                <div id="notes-list-view">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                             <label for="note-filter-select" class="text-sm font-medium text-gray-700">Filter by:</label>
+                             <select id="note-filter-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 focus-ring"></select>
+                        </div>
+                         <button id="manage-note-categories-btn" class="text-sm text-indigo-600 hover:underline focus-ring rounded">Manage Categories</button>
+                        <button id="new-note-btn" class="text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm px-5 py-2.5 focus-ring">New Note</button>
+                    </div>
+                    <div id="notes-list" class="space-y-3"></div>
+                </div>
+                <div id="note-editor-view" class="hidden">
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="note-title-input" class="block mb-2 text-sm font-medium">Note Title</label>
+                            <input type="text" id="note-title-input" class="bg-gray-50 border border-gray-300 rounded-lg w-full p-3 focus-ring" placeholder="Enter a title...">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                             <div>
+                                <label for="note-date-input" class="block mb-2 text-sm font-medium">Meeting Date</label>
+                                <input type="date" id="note-date-input" class="bg-gray-50 border border-gray-300 rounded-lg w-full p-3 focus-ring">
+                            </div>
+                            <div>
+                                <label for="note-category-select" class="block mb-2 text-sm font-medium">Category</label>
+                                <select id="note-category-select" class="bg-gray-50 border border-gray-300 rounded-lg w-full p-3 focus-ring"></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="note-content-input" class="block mb-2 text-sm font-medium">Content</label>
+                        <textarea id="note-content-input" rows="10" class="block p-3 w-full rounded-lg border focus-ring" placeholder="Start typing..."></textarea>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <button id="delete-note-btn" class="text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm px-5 py-2.5 focus-ring">Delete</button>
+                        <div class="flex gap-3">
+                            <button id="back-to-list-btn" class="text-gray-900 bg-white hover:bg-gray-100 border rounded-lg text-sm px-5 py-2.5 focus-ring">Back</button>
+                            <button id="save-note-btn" class="text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm px-5 py-2.5 focus-ring">Save</button>
+                        </div>
+                    </div>
+                    <div id="note-saved-message" class="text-sm text-green-600 mt-2 text-right opacity-0">Note saved!</div>
+                </div>
+            </div>
+            
+            <!-- Shopping List Section -->
+            <div id="content-shopping" class="tab-content hidden">
+                <form id="shopping-form" class="flex items-center gap-3 mb-6">
+                    <input type="text" id="shopping-input" placeholder="Add a new item (e.g., Milk)" class="flex-grow bg-gray-50 border rounded-lg w-full p-3 focus-ring" required>
+                    <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm px-5 py-3 focus-ring">Add</button>
+                </form>
+                <div id="shopping-list" class="space-y-3"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- To-Do Category Management Modal -->
+    <div id="category-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 modal-content scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Manage To-Do Categories</h2>
+                <button id="close-category-modal-btn" class="p-2 rounded-full hover:bg-gray-200 focus-ring">
+                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="category-form" class="flex items-center gap-3 mb-4">
+                <input type="text" id="category-input" placeholder="New category name..." class="flex-grow bg-gray-50 border rounded-lg w-full p-3 focus-ring" required>
+                <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm px-5 py-3 focus-ring">Add</button>
+            </form>
+            <div id="category-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <!-- Note Category Management Modal -->
+    <div id="note-category-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 modal-content scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Manage Note Categories</h2>
+                <button id="close-note-category-modal-btn" class="p-2 rounded-full hover:bg-gray-200 focus-ring">
+                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="note-category-form" class="flex items-center gap-3 mb-4">
+                <input type="text" id="note-category-input" placeholder="New category name..." class="flex-grow bg-gray-50 border rounded-lg w-full p-3 focus-ring" required>
+                <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm px-5 py-3 focus-ring">Add</button>
+            </form>
+            <div id="note-category-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = {
+                todo: { btn: document.getElementById('tab-todo'), content: document.getElementById('content-todo') },
+                notes: { btn: document.getElementById('tab-notes'), content: document.getElementById('content-notes') },
+                shopping: { btn: document.getElementById('tab-shopping'), content: document.getElementById('content-shopping') }
+            };
+
+            function switchTab(activeKey) {
+                Object.keys(tabs).forEach(key => {
+                    const isActive = key === activeKey;
+                    tabs[key].btn.classList.toggle('text-indigo-600', isActive);
+                    tabs[key].btn.classList.toggle('border-indigo-500', isActive);
+                    tabs[key].btn.classList.toggle('text-gray-500', !isActive);
+                    tabs[key].btn.classList.toggle('border-transparent', !isActive);
+                    tabs[key].content.classList.toggle('hidden', !isActive);
+                });
+            }
+            Object.keys(tabs).forEach(key => tabs[key].btn.addEventListener('click', () => switchTab(key)));
+
+            const categoryColors = ['bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-red-100 text-red-800', 'bg-indigo-100 text-indigo-800'];
+            const getCategoryColor = (categoryName) => {
+                if (!categoryName) return 'bg-gray-100 text-gray-800';
+                let hash = 0;
+                for (let i = 0; i < categoryName.length; i++) {
+                    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return categoryColors[Math.abs(hash % categoryColors.length)];
+            };
+
+            // --- TO-DO CATEGORY LOGIC ---
+            const manageCategoriesBtn = document.getElementById('manage-categories-btn');
+            const categoryModal = document.getElementById('category-modal');
+            const closeCategoryModalBtn = document.getElementById('close-category-modal-btn');
+            const categoryForm = document.getElementById('category-form');
+            const categoryInput = document.getElementById('category-input');
+            const categoryList = document.getElementById('category-list');
+            const todoCategorySelect = document.getElementById('todo-category-select');
+            const todoFilterSelect = document.getElementById('todo-filter-select');
+            
+            let todoCategories = JSON.parse(localStorage.getItem('todoCategories')) || ['Work', 'Personal', 'Study'];
+            
+            const saveTodoCategories = () => localStorage.setItem('todoCategories', JSON.stringify(todoCategories));
+
+            const renderTodoCategories = () => {
+                categoryList.innerHTML = '';
+                todoCategories.forEach(cat => {
+                    const catEl = document.createElement('div');
+                    catEl.className = 'flex justify-between items-center p-2 rounded-md hover:bg-gray-100';
+                    catEl.innerHTML = `<span>${cat}</span><button data-cat="${cat}" class="delete-cat-btn p-1 rounded-full hover:bg-red-100 focus-ring"><svg class="w-5 h-5 text-gray-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
+                    categoryList.appendChild(catEl);
+                });
+            };
+
+            const updateTodoCategoryDropdowns = () => {
+                todoCategorySelect.innerHTML = '<option value="Uncategorized">Uncategorized</option>';
+                todoFilterSelect.innerHTML = '<option value="All">All Categories</option>';
+                todoCategories.forEach(cat => {
+                    todoCategorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    todoFilterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            };
+
+            manageCategoriesBtn.addEventListener('click', () => { renderTodoCategories(); categoryModal.classList.remove('hidden'); });
+            closeCategoryModalBtn.addEventListener('click', () => categoryModal.classList.add('hidden'));
+            categoryForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const newCat = categoryInput.value.trim();
+                if (newCat && !todoCategories.includes(newCat)) {
+                    todoCategories.push(newCat);
+                    saveTodoCategories();
+                    renderTodoCategories();
+                    updateTodoCategoryDropdowns();
+                    categoryInput.value = '';
+                }
+            });
+            categoryList.addEventListener('click', e => {
+                const target = e.target.closest('.delete-cat-btn');
+                if (target) {
+                    const catToDelete = target.dataset.cat;
+                    todoCategories = todoCategories.filter(c => c !== catToDelete);
+                    saveTodoCategories();
+                    renderTodoCategories();
+                    updateTodoCategoryDropdowns();
+                }
+            });
+
+            // --- TO-DO LIST LOGIC ---
+            const todoForm = document.getElementById('todo-form');
+            const todoInput = document.getElementById('todo-input');
+            const todoDueDateInput = document.getElementById('todo-due-date');
+            const todoList = document.getElementById('todo-list');
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            let currentTodoFilter = 'All';
+            const saveTasks = () => localStorage.setItem('tasks', JSON.stringify(tasks));
+            const renderTasks = () => {
+                todoList.innerHTML = '';
+                const filteredTasks = tasks.filter(task => currentTodoFilter === 'All' || task.category === currentTodoFilter);
+                if (filteredTasks.length === 0) {
+                    todoList.innerHTML = `<p class="text-gray-500 text-center italic">No tasks in this category.</p>`;
+                    return;
+                }
+                filteredTasks.sort((a, b) => a.completed - b.completed || new Date(a.id) - new Date(b.id));
+                filteredTasks.forEach(task => {
+                    const taskElement = document.createElement('div');
+                    const isOverdue = !task.completed && task.dueDate && new Date(task.dueDate) < new Date().setHours(0,0,0,0);
+                    taskElement.className = `task-item flex items-center justify-between p-3 rounded-lg border ${task.completed ? 'bg-green-50 text-gray-500 border-green-200' : isOverdue ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`;
+                    const textClass = task.completed ? 'line-through' : '';
+                    const dateClass = isOverdue ? 'text-red-600 font-medium' : 'text-gray-500';
+                    const categoryHtml = task.category !== 'Uncategorized' ? `<span class="text-xs font-medium mr-3 px-2 py-0.5 rounded-full ${getCategoryColor(task.category)}">${task.category}</span>` : '';
+                    const dueDateHtml = task.dueDate ? `<span class="text-xs ${dateClass}">${new Date(task.dueDate).toLocaleDateString()}</span>` : '';
+                    taskElement.innerHTML = `<div class="flex items-center flex-grow"><button data-id="${task.id}" class="toggle-btn p-2 rounded-full hover:bg-green-100 focus-ring"><svg class="h-5 w-5 ${task.completed ? 'text-green-600' : 'text-gray-400'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button><span class="ml-3 ${textClass}">${task.text}</span></div><div class="flex items-center gap-2 ml-4">${categoryHtml}${dueDateHtml}<button data-id="${task.id}" class="delete-btn p-2 rounded-full hover:bg-red-100 focus-ring"><svg class="h-5 w-5 text-gray-400 hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div>`;
+                    todoList.appendChild(taskElement);
+                });
+            };
+            todoForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const taskText = todoInput.value.trim();
+                if (taskText) {
+                    tasks.push({ id: Date.now(), text: taskText, completed: false, dueDate: todoDueDateInput.value || null, category: todoCategorySelect.value });
+                    saveTasks();
+                    renderTasks();
+                    todoInput.value = '';
+                    todoDueDateInput.value = '';
+                }
+            });
+            todoList.addEventListener('click', e => {
+                const target = e.target.closest('button'); if (!target) return;
+                const taskId = Number(target.dataset.id);
+                if (target.classList.contains('toggle-btn')) { const task = tasks.find(t => t.id === taskId); if (task) task.completed = !task.completed; }
+                if (target.classList.contains('delete-btn')) { tasks = tasks.filter(t => t.id !== taskId); }
+                saveTasks();
+                renderTasks();
+            });
+            todoFilterSelect.addEventListener('change', e => { currentTodoFilter = e.target.value; renderTasks(); });
+
+            // --- NOTE CATEGORY LOGIC ---
+            const manageNoteCategoriesBtn = document.getElementById('manage-note-categories-btn');
+            const noteCategoryModal = document.getElementById('note-category-modal');
+            const closeNoteCategoryModalBtn = document.getElementById('close-note-category-modal-btn');
+            const noteCategoryForm = document.getElementById('note-category-form');
+            const noteCategoryInput = document.getElementById('note-category-input');
+            const noteCategoryList = document.getElementById('note-category-list');
+            const noteCategorySelect = document.getElementById('note-category-select');
+            const noteFilterSelect = document.getElementById('note-filter-select');
+            
+            let noteCategories = JSON.parse(localStorage.getItem('noteCategories')) || ['Project Alpha', 'Team Sync', '1-on-1'];
+            const saveNoteCategories = () => localStorage.setItem('noteCategories', JSON.stringify(noteCategories));
+
+            const renderNoteCategories = () => {
+                noteCategoryList.innerHTML = '';
+                noteCategories.forEach(cat => {
+                    const catEl = document.createElement('div');
+                    catEl.className = 'flex justify-between items-center p-2 rounded-md hover:bg-gray-100';
+                    catEl.innerHTML = `<span>${cat}</span><button data-cat="${cat}" class="delete-note-cat-btn p-1 rounded-full hover:bg-red-100 focus-ring"><svg class="w-5 h-5 text-gray-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
+                    noteCategoryList.appendChild(catEl);
+                });
+            };
+
+            const updateNoteCategoryDropdowns = () => {
+                noteCategorySelect.innerHTML = '<option value="Uncategorized">Uncategorized</option>';
+                noteFilterSelect.innerHTML = '<option value="All">All Categories</option>';
+                noteCategories.forEach(cat => {
+                    noteCategorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    noteFilterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            };
+
+            manageNoteCategoriesBtn.addEventListener('click', () => { renderNoteCategories(); noteCategoryModal.classList.remove('hidden'); });
+            closeNoteCategoryModalBtn.addEventListener('click', () => noteCategoryModal.classList.add('hidden'));
+            noteCategoryForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const newCat = noteCategoryInput.value.trim();
+                if (newCat && !noteCategories.includes(newCat)) {
+                    noteCategories.push(newCat);
+                    saveNoteCategories();
+                    renderNoteCategories();
+                    updateNoteCategoryDropdowns();
+                    noteCategoryInput.value = '';
+                }
+            });
+            noteCategoryList.addEventListener('click', e => {
+                const target = e.target.closest('.delete-note-cat-btn');
+                if (target) {
+                    const catToDelete = target.dataset.cat;
+                    noteCategories = noteCategories.filter(c => c !== catToDelete);
+                    saveNoteCategories();
+                    renderNoteCategories();
+                    updateNoteCategoryDropdowns();
+                }
+            });
+
+            // --- MEETING NOTES LOGIC ---
+            const notesListView = document.getElementById('notes-list-view');
+            const noteEditorView = document.getElementById('note-editor-view');
+            const notesList = document.getElementById('notes-list');
+            const newNoteBtn = document.getElementById('new-note-btn');
+            const backToListBtn = document.getElementById('back-to-list-btn');
+            const saveNoteBtn = document.getElementById('save-note-btn');
+            const deleteNoteBtn = document.getElementById('delete-note-btn');
+            const noteTitleInput = document.getElementById('note-title-input');
+            const noteDateInput = document.getElementById('note-date-input');
+            const noteContentInput = document.getElementById('note-content-input');
+            const noteSavedMessage = document.getElementById('note-saved-message');
+            let notes = JSON.parse(localStorage.getItem('meetingNotes')) || [];
+            let currentNoteId = null;
+            let currentNoteFilter = 'All';
+            const saveNotes = () => localStorage.setItem('meetingNotes', JSON.stringify(notes));
+            const showEditor = () => { notesListView.classList.add('hidden'); noteEditorView.classList.remove('hidden'); };
+            const showList = () => { noteEditorView.classList.add('hidden'); notesListView.classList.remove('hidden'); currentNoteId = null; renderNotesList(); };
+            const renderNotesList = () => {
+                notesList.innerHTML = '';
+                const filteredNotes = notes.filter(note => currentNoteFilter === 'All' || note.category === currentNoteFilter);
+                if (filteredNotes.length === 0) { notesList.innerHTML = `<p class="text-gray-500 text-center italic">No notes in this category.</p>`; return; }
+                filteredNotes.sort((a, b) => new Date(b.date || b.id) - new Date(a.date || a.id));
+                filteredNotes.forEach(note => {
+                    const noteElement = document.createElement('div');
+                    noteElement.className = 'note-item p-4 rounded-lg border border-gray-200 cursor-pointer';
+                    noteElement.dataset.id = note.id;
+                    const categoryHtml = note.category !== 'Uncategorized' ? `<span class="text-xs font-medium mr-3 px-2 py-0.5 rounded-full ${getCategoryColor(note.category)}">${note.category}</span>` : '';
+                    const dateHtml = note.date ? `<span class="text-sm text-gray-500">${new Date(note.date).toLocaleDateString()}</span>` : '';
+                    noteElement.innerHTML = `<div class="flex justify-between items-center mb-2"><span class="font-medium">${note.title}</span><div class="flex items-center">${categoryHtml}${dateHtml}</div></div><p class="text-sm text-gray-600 truncate">${note.content.substring(0, 100)}</p>`;
+                    noteElement.addEventListener('click', () => openNote(note.id));
+                    notesList.appendChild(noteElement);
+                });
+            };
+            const openNote = (id) => {
+                const note = notes.find(n => n.id === id);
+                if (note) {
+                    currentNoteId = id;
+                    noteTitleInput.value = note.title;
+                    noteContentInput.value = note.content;
+                    noteDateInput.value = note.date || '';
+                    noteCategorySelect.value = note.category || 'Uncategorized';
+                    deleteNoteBtn.classList.remove('hidden');
+                    showEditor();
+                }
+            };
+            newNoteBtn.addEventListener('click', () => {
+                currentNoteId = null;
+                noteTitleInput.value = '';
+                noteContentInput.value = '';
+                noteDateInput.value = new Date().toISOString().slice(0, 10);
+                noteCategorySelect.value = 'Uncategorized';
+                deleteNoteBtn.classList.add('hidden');
+                showEditor();
+            });
+            backToListBtn.addEventListener('click', showList);
+            saveNoteBtn.addEventListener('click', () => {
+                const title = noteTitleInput.value.trim() || 'Untitled Note';
+                const content = noteContentInput.value.trim();
+                const date = noteDateInput.value;
+                const category = noteCategorySelect.value;
+                if (currentNoteId) {
+                    const note = notes.find(n => n.id === currentNoteId);
+                    if (note) { Object.assign(note, { title, content, date, category }); }
+                } else {
+                    notes.push({ id: Date.now(), title, content, date, category });
+                }
+                saveNotes();
+                noteSavedMessage.style.opacity = '1';
+                setTimeout(() => noteSavedMessage.style.opacity = '0', 2000);
+                setTimeout(showList, 500);
+            });
+            deleteNoteBtn.addEventListener('click', () => { if (currentNoteId) { notes = notes.filter(n => n.id !== currentNoteId); saveNotes(); showList(); } });
+            noteFilterSelect.addEventListener('change', e => { currentNoteFilter = e.target.value; renderNotesList(); });
+
+            // --- SHOPPING LIST LOGIC ---
+            const shoppingForm = document.getElementById('shopping-form');
+            const shoppingInput = document.getElementById('shopping-input');
+            const shoppingList = document.getElementById('shopping-list');
+            let shoppingItems = JSON.parse(localStorage.getItem('shoppingItems')) || [];
+            const saveShoppingItems = () => localStorage.setItem('shoppingItems', JSON.stringify(shoppingItems));
+            const renderShoppingList = () => {
+                shoppingList.innerHTML = '';
+                if (shoppingItems.length === 0) { shoppingList.innerHTML = `<p class="text-gray-500 text-center italic">Your shopping list is empty.</p>`; return; }
+                shoppingItems.sort((a, b) => a.completed - b.completed);
+                shoppingItems.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = `shopping-item flex items-center justify-between p-3 rounded-lg border ${item.completed ? 'bg-green-50 text-gray-500 border-green-200' : 'bg-white border-gray-200'}`;
+                    const textClass = item.completed ? 'line-through' : '';
+                    itemElement.innerHTML = `<div class="flex items-center flex-grow"><button data-id="${item.id}" class="toggle-btn p-2 rounded-full hover:bg-green-100 focus-ring"><svg class="h-5 w-5 ${item.completed ? 'text-green-600' : 'text-gray-400'}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg></button><span class="ml-3 ${textClass}">${item.text}</span></div><button data-id="${item.id}" class="delete-btn p-2 rounded-full hover:bg-red-100 focus-ring"><svg class="h-5 w-5 text-gray-400 hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>`;
+                    shoppingList.appendChild(itemElement);
+                });
+            };
+            shoppingForm.addEventListener('submit', e => { e.preventDefault(); const itemText = shoppingInput.value.trim(); if (itemText) { shoppingItems.push({ id: Date.now(), text: itemText, completed: false }); saveShoppingItems(); renderShoppingList(); shoppingInput.value = ''; } });
+            shoppingList.addEventListener('click', e => { const target = e.target.closest('button'); if (!target) return; const itemId = Number(target.dataset.id); if (target.classList.contains('toggle-btn')) { const item = shoppingItems.find(i => i.id === itemId); if (item) item.completed = !item.completed; } if (target.classList.contains('delete-btn')) { shoppingItems = shoppingItems.filter(i => i.id !== itemId); } saveShoppingItems(); renderShoppingList(); });
+
+            // --- INITIAL RENDER ---
+            updateTodoCategoryDropdowns();
+            updateNoteCategoryDropdowns();
+            renderTasks();
+            renderNotesList();
+            renderShoppingList();
+        });
+    </script>
+</body>
+</html>
